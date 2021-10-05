@@ -1,0 +1,5 @@
+"0","svychisq(~ nhanes$htn + nhanes$smk, design=bpdsn, statistic=""Wald"")
+"
+"2","Error in `[.data.frame`(design$variables, , as.character(rows)) : 
+  undefined columns selected
+"

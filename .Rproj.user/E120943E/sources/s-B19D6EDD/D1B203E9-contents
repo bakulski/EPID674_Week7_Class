@@ -1,0 +1,306 @@
+---
+title: "EPID674 Epidemiologic Data Analysis using R"
+subtitle: "R packages for Epidemiologic Research"
+author: "Kelly Bakulski"
+date: "Last compiled on `r format(Sys.Date(), '%B %d, %Y')`"
+output:
+   html_document: 
+    toc: true
+    toc_float: true
+   word_document: default
+---
+
+# Set up options
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Install new packages
+```{r install_packages, include=FALSE, eval=FALSE}
+
+# Install packages. Do this only once.
+options(repos="https://cran.rstudio.com" )
+install.packages("Hmisc")
+install.packages("epiDisplay")
+install.packages("nlme")
+install.packages("survey")
+install.packages("splines")
+install.packages("rmeta")
+install.packages("here")
+# To avoid installing every time: change set up in curly brackets to eval=FALSE
+```
+
+
+# Load packages
+```{r load_packages, include=FALSE}
+##### Load these packages for the current session
+library(Hmisc)
+library(epiDisplay)
+library(survival)
+library(nlme)
+library(survey)
+library(splines)
+library(rmeta)
+library(here)
+```
+
+# Load data, remake useful variables
+```{r load_data}
+# Check the file path
+here("nhanes3.rda")
+# Load the saved R data
+load(here("nhanes3.rda"))
+
+
+# Remake a few variables from last class if they are no longer in your environment
+sex1 <- factor(nhanes$sex, levels = c(1, 2), labels = c("male", "female"))
+AGE5b <- cut(nhanes$age, quantile(nhanes$age, c(0, .2, .4, .6, .8, 1)), include.lowest = T) # quintiles
+AGE5c <- cut(nhanes$age, breaks = c(19, 40, 50, 60, 70, 90))
+age5c <- unclass(AGE5c)
+nhanes <- cbind(nhanes, sex1, AGE5b, AGE5c, age5c)
+
+
+# Clean up the dataset. Make sure NaN are NA for key covariates
+table(nhanes$educ, useNA = "always")
+nhanes$educ[is.nan(nhanes$educ)] <- NA
+table(nhanes$educ, useNA = "always")
+table(nhanes$alc, useNA = "always")
+nhanes$alc[is.nan(nhanes$alc)] <- NA
+table(nhanes$alc, useNA = "always")
+```
+
+# 7.1. Survival Analysis: Association between total mortality (d_total) and blood lead (bpb)
+```{r survival_analysis}
+tab1(nhanes$d_total) # Variable for death due to any cause in NHANES
+summ(nhanes$pmon_mec) # Number of months of follow up 
+
+### Define Surv() object to use in later functions
+surv.total <- Surv(nhanes$pmon_mec, nhanes$d_total)
+surv.total[1:10] # Includes information on time of follow up and whether the person died, denoted with a "+"
+
+### K-M Life table and curve
+fit.total <- survfit(Surv(nhanes$pmon_mec, nhanes$d_total) ~ 1) # Model with no predictors, just outcome
+#summary(fit.total)
+summary(nhanes$pmon_mec/12) # How many years of follow up do you have?
+fit.total # How many people died over this time period?
+plot(fit.total)
+## suppress 95% CI lines and the time marks for censored subjects.
+plot(fit.total, ylim = c(0.7, 1.0), conf.int = F, mark.time = F, ylab="Probability of survival", xlab="Months")
+
+### Survival by different levels of covariates
+fit.total.sex <- survfit(Surv(nhanes$pmon_mec, nhanes$d_total) ~ nhanes$sex)
+fit.total.sex # How many people died in each sex group?
+#summary(fit.total.sex)[1:10]
+
+plot(fit.total.sex, ylim = c(0.6, 1.0), col = c("blue", "red"), lty = c(1, 2), mark.time = F, main = "Kaplan-Meier curve", xlab = "Time (months)", ylab = "Survival probability")
+legend("bottomleft", legend = c("Men", "Women"), col = c("blue", "red"),  lty = c(1, 2))
+
+### Test for differences in survival curves
+survdiff(Surv(nhanes$pmon_mec, nhanes$d_total) ~ nhanes$sex) # Is there a difference in survival among males and females?
+```
+
+### Cox regression
+```{r cox_regression}
+cox.bpb <- coxph(Surv(nhanes$pmon_mec, nhanes$d_total) ~ nhanes$bpb)
+summary(cox.bpb) # Is blood Pb associated with survival? Easier to visualize in categories of exposure
+
+bpb3 <- cut2(nhanes$bpb, g = 3)
+tab1(bpb3) # Tertiles of blood Pb
+
+# K-M Life table and curve
+fit.total.bpb3 <- survfit(Surv(nhanes$pmon_mec, nhanes$d_total) ~ factor(bpb3))
+fit.total.bpb3
+plot(fit.total.bpb3, col = c(1:3), lty = c(1:3), ylim = c(0.6, 1.0), main = "Survival in relation to blood lead levels", xlab = "Time (months)", ylab = "Survival probability") 
+legend(30, 0.7, legend = c("Q1", "Q2", "Q3"), lty = c(1:3), col = c(1:3))
+
+# crude
+cox.bpb3 <- coxph(Surv(nhanes$pmon_mec, nhanes$d_total) ~ factor(bpb3))
+summary(cox.bpb3)
+
+# adjusted
+cox.bpb3.adj <- coxph(Surv(nhanes$pmon_mec, nhanes$d_total) ~ bpb3 + nhanes$age + factor(nhanes$sex) + factor(nhanes$race) + factor(nhanes$educ) + factor(nhanes$smk) + factor(nhanes$alc))
+summary(cox.bpb3.adj)
+
+### Test for the proportional hazards assumption
+test.prop <- cox.zph(cox.bpb3.adj) # Do any of the variables violate the proportional hazards assumption? May consider stratifying by sex.
+test.prop 
+## Display a graph of the scaled Schoenfeld residuals, along with a smooth curve
+plot(test.prop) # for all variables
+plot(test.prop, var = 4) + # Can call up variables indivdually, here for sex
+abline(h = 0, lty = 3, col = 2)
+
+# Stratify by sex
+cox.bpb3.adj1 <- coxph(Surv(nhanes$pmon_mec, nhanes$d_total) ~ bpb3 + nhanes$age + strata(nhanes$sex) + factor(nhanes$race) + factor(nhanes$educ) + factor(nhanes$smk) + factor(nhanes$alc))
+summary(cox.bpb3.adj1)
+cox.zph(cox.bpb3.adj1)
+```
+
+########################################
+############ Optional: Exercise 7A ##############
+########################################
+Not a graded assignment.
+
+# 7.2. Linear and nonlinear mixed effects models with the nlme package
+
+## Identify and understand your clustering variable (random effect)
+```{r cluster_variable}
+##Distribution of primary sampling unit (psu) and cluster (strata)
+tab1(nhanes$psu)		# 2 PSU
+tab1(nhanes$strata)	# 49 strata
+
+nhanes$locode<-ifelse(nhanes$psu==1, nhanes$strata, nhanes$strata+49)
+tab1(nhanes$locode)
+table(nhanes$psu, nhanes$locode)
+```
+
+## Perform mixed effects models with random intercepts and random slopes
+```{r mixed_effects_models}
+###Random intercepts only model for SBP
+sbp.lme <- lme(fixed = log(sbp) ~ log(bpb) + age + I(age^2) + bmi + factor(race) + factor(sex) + factor(smk) + factor(educ) + factor(alc), random=~1|locode, na.action=na.omit, data=nhanes)
+summary(sbp.lme)
+
+##Return variance-covariance matrix for random variables
+getVarCov(sbp.lme)
+
+##Random Intercepts and slopes model
+sbp.lme2<-lme(fixed = log(sbp) ~ log(bpb) + age + I(age^2) + bmi + factor(race) + factor(sex) + factor(smk) + factor(educ) + factor(alc), random=~1+log(bpb)|locode, na.action=na.omit, data=nhanes)
+summary(sbp.lme2)
+getVarCov(sbp.lme2)
+
+## compare these two models
+anova(sbp.lme, sbp.lme2)
+```
+
+# 7.3. Analysis of complex survey samples with the survey package
+
+## Build a survey design object
+```{r build_survey_design_object}
+#### first specify the design effect
+bpdsn<-svydesign(id=~psu, strata=~strata, weights=~wt_mh, data=nhanes, nest=T)
+bpdsn
+#nest=T: relabel cluster ids to enforce nesting within strata
+```
+
+## Descriptive statistics with survey weighting
+```{r survey_weighted_descriptives}
+#### Descriptive analyses
+svymean(~ nhanes$age, design=bpdsn)
+summ(nhanes$age)
+svymean(~ nhanes$age + nhanes$sbp + nhanes$bpb, design=bpdsn)
+svymean(~ nhanes$sbp + nhanes$bpb + nhanes$bmi, design=bpdsn)
+svymean(~ nhanes$sbp + nhanes$bpb + nhanes$bmi, design=bpdsn, na.rm=T)
+
+svytable(~ nhanes$sex, design=bpdsn)
+svytable(~ nhanes$sex, Ntotal=100, design=bpdsn)
+svytable(~ nhanes$sex + nhanes$race, design=bpdsn)
+svytable(~ nhanes$sex + nhanes$race, Ntotal=100, design=bpdsn)
+#svychisq(~ nhanes$sex + nhanes$race, design=bpdsn)
+chisq.test(nhanes$sex, nhanes$race)
+svytable(~ nhanes$htn + nhanes$smk, design=bpdsn)
+#svychisq(~ nhanes$htn + nhanes$smk, design=bpdsn, statistic="Wald")
+## Survey Chisq used in SUDAAN
+```
+
+## Survey weighting univariate, bivariate, and graphical analyses
+```{r survey_weighting_graphics}
+## Univariate distributions and bivariate associations using graphical analyses
+svyhist(~ nhanes$sbp, design=bpdsn)
+svyhist(~ log(nhanes$sbp), design=bpdsn)
+svyhist(~ nhanes$bpb, bpdsn)
+svyhist(~ log(nhanes$bpb), bpdsn)
+
+svyboxplot(log(nhanes$sbp) ~ 1, bpdsn)
+# svyboxplot(log(nhanes$sbp) ~ as.factor(nhanes$smk), bpdsn)
+
+# bp.bysexrace <- svyby(~ nhanes$sbp + nhanes$dbp, ~ nhanes$sex + nhanes$race, bpdsn, svymean)
+# barplot(bp.bysexrace)
+# barplot(bp.bysexrace, legend=TRUE)
+
+## change the label of x-axis and ylim
+# xlabel<-c("Male, White","Female, White","Male, Black","Female, Black")
+# barplot(bp.bysexrace, legend=TRUE, ylim=c(0,160),col=c("purple","violet"), names=xlabel)
+
+#simple scatterplot with circles whose area is proportional to the sampling weight
+svyplot(log(nhanes$sbp) ~ nhanes$age, bpdsn, style="bubble")
+#style="transparent" plots points with opacity proportional to sampling weight 
+svyplot(log(nhanes$sbp)~log(nhanes$bpb), bpdsn, style="transparent", pch=19, xlab="Blood lead", ylab="log(SBP)")
+
+## Scatterplot smoothing
+smth.sbp.bpb1<-svysmooth(log(nhanes$sbp) ~ nhanes$bpb, bpdsn, bandwidth=10)
+#fit local polynomial kernel smoothing with a bandwidth=10 bpb unit 
+plot(smth.sbp.bpb1)
+smth.sbp.bpb2<-svysmooth(log(nhanes$sbp) ~nhanes$bpb, bpdsn, bandwidth=20)
+plot(smth.sbp.bpb2)
+```
+
+## Survey weighted regression analyses
+```{r survey_weighting_regression}
+#### Linear and mixed effect models
+## First fit a linear regression
+sbp.lm<-lm(log(sbp) ~ log(bpb) + age + I(age^2) + bmi + factor(race) + factor(sex) + factor(smk) + factor(educ) + factor(alc), data=nhanes)
+summary(sbp.lm)
+
+sbp.lme<-lme(fixed = log(sbp) ~ log(bpb) + age + I(age^2) + bmi + factor(race) + factor(sex) + factor(smk) + factor(educ) + factor(alc), random=~1|strata, 
+na.action=na.omit, data=nhanes)
+summary(sbp.lme)
+
+## Let's use the survey package
+# sbp.svy<-svyglm(log(nhanes$sbp) ~ log(nhanes$bpb) + nhanes$age + I(nhanes$age^2) + nhanes$bmi + factor(nhanes$race) + factor(nhanes$sex) + factor(nhanes$smk) + factor(nhanes$educ) + factor(nhanes$alc), bpdsn)
+# summary(sbp.svy)
+# plot(sbp.svy)
+
+# par(mfrow=c(2,2))
+# plot(sbp.lm, which=1)
+# plot(sbp.lm, which=2)
+# plot(sbp.svy, which=1)
+# plot(sbp.svy, which=2)
+# par(mfrow=c(1,1))
+
+## compare the beta's
+# summary(sbp.lm)$coef[2,]
+# summary(sbp.lme)$tTable[2,]
+# summary(sbp.svy)$coef[2,]
+
+#### Logistic regression model
+# htn.svy<-svyglm(nhanes$htn ~ log(nhanes$bpb) + ns(nhanes$age,df=5) + ns(nhanes$bmi,df=5) + factor(nhanes$race) + factor(nhanes$sex) + factor(nhanes$educ) + nhanes$hematoc + nhanes$chol + nhanes$packyrs + nhanes$diag_dm, family=quasibinomial(), bpdsn)
+# summary(htn.svy)
+```
+
+# 7.4. Meta-analysis in R with the rmeta package
+
+## Set up objects for meta analysis
+```{r meta_analysis_objects}
+##Suppose you have the estimates from 16 cities of the effect of PM2.5 
+##on Myocardial Infarction (MI) hospital admissions. 
+##We want to obtain the combined effect across all the cities.
+city<-1:16
+coef<-c(0.00155,0.00445,-0.00597,0.00237,0.00031,-0.00035,0.00206,0.00127,
+-0.00395,-0.00434,0.00241,0.00730,-0.00175,0.00117,0.00007,0.00350)
+
+se<-c(0.013589379,0.003224905,0.002400626,0.001797566,0.001019834,0.002658267,
+0.001529252,0.002388748,0.002583907,0.005885021,0.00122501,0.00597465,
+0.002546777,0.002406304,0.000913846,0.00517299)
+```
+
+## Perform meta-analysis
+```{r meta_analysis}
+model<-meta.summaries(coef, se, names=city, method="random")
+#method="random" estimates and adds a heterogeneity variance
+summary(model)
+
+##Plot the summary results
+metaplot(coef, se)
+
+##Get combined estimate, its standard error and RR and 95% CI
+model$summary 
+model$summ
+model$se.summary 
+model$se
+
+exp(model$summ*10)
+exp((model$summ-1.96*model$se)*10)
+exp((model$summ+1.96*model$se)*10)
+```
+
+### End of the class!
+### Thank you so much!

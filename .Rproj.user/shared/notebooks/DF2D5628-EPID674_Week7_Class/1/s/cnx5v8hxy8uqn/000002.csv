@@ -1,0 +1,16 @@
+"0","#### first specify the design effect"
+"0","bpdsn<-svydesign(id=~psu, strata=~strata, weights=~wt_mh, data=nhanes, nest=T)"
+"0","bpdsn"
+"1","Stratified "
+"1","1"
+"1"," "
+"1","- level Cluster Sampling design"
+"1"," (with replacement)
+"
+"1","With (98) clusters.
+"
+"1","svydesign(id = ~psu, strata = ~strata, weights = ~wt_mh, data = nhanes, 
+"
+"1","    nest = T)
+"
+"0","#nest=T: relabel cluster ids to enforce nesting within strata"

@@ -1,0 +1,74 @@
+"0","##### Load these packages for the current session"
+"0","library(Hmisc)"
+"2","Loading required package: lattice
+"
+"2","Loading required package: survival
+"
+"2","Loading required package: Formula
+"
+"2","Loading required package: ggplot2
+"
+"2","Registered S3 method overwritten by 'htmlwidgets':
+  method           from         
+  print.htmlwidget tools:rstudio
+"
+"2","Registered S3 method overwritten by 'data.table':
+  method           from
+  print.data.table     
+"
+"2","
+Attaching package: ‘Hmisc’
+
+"
+"2","The following objects are masked from ‘package:base’:
+
+    format.pval, units
+
+"
+"0","library(epiDisplay)"
+"2","Loading required package: foreign
+"
+"2","Loading required package: MASS
+"
+"2","Loading required package: nnet
+"
+"2","
+Attaching package: ‘epiDisplay’
+
+"
+"2","The following object is masked from ‘package:ggplot2’:
+
+    alpha
+
+"
+"2","The following object is masked from ‘package:lattice’:
+
+    dotplot
+
+"
+"0","library(survival)"
+"0","library(nlme)"
+"0","library(survey)"
+"2","Loading required package: grid
+"
+"2","Loading required package: Matrix
+"
+"2","
+Attaching package: ‘survey’
+
+"
+"2","The following object is masked from ‘package:Hmisc’:
+
+    deff
+
+"
+"2","The following object is masked from ‘package:graphics’:
+
+    dotchart
+
+"
+"0","library(splines)"
+"0","library(rmeta)"
+"0","library(here)"
+"2","here() starts at /Volumes/GoogleDrive/My Drive/Teaching/EPID674/EPID674_Week7_Class
+"

@@ -1,0 +1,6 @@
+"0","#### Logistic regression model
+htn.svy<-svyglm(nhanes$htn ~ log(nhanes$bpb) + ns(nhanes$age,df=5) + ns(nhanes$bmi,df=5) + factor(nhanes$race) + factor(nhanes$sex) + factor(nhanes$educ) + nhanes$hematoc + nhanes$chol + nhanes$packyrs + nhanes$diag_dm,family=quasibinomial(), design=bpdsn)
+"
+"2","Error in svyglm.survey.design(nhanes$htn ~ log(nhanes$bpb) + ns(nhanes$age,  : 
+  all variables must be in design= argument
+"

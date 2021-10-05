@@ -1,0 +1,50 @@
+---
+title: "EPID674 Epidemiologic Data Analysis using R"
+subtitle: "Not Graded Optional Homework 7A"
+author: "Insert Your Name Here"
+date: "Last compiled on `r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  word_document: default
+---
+
+# Note, this is an optional, ungraded assignment
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(foreign)
+library(epiDisplay)
+library(stats)
+library(Hmisc)
+library(gmodels)
+library(here)
+
+```
+
+# Use the NHANES3 dataset (from class) to test the following:
+
+# Covariates: age, factor(sex), factor(race), factor(educ), factor(smk), factor(alc)
+
+
+# Problem 1
+## Examine the association between blood lead and cardiovascular mortality (d_cvd) over time (pmon_mec). Use the covariates (confounders) considered above. Check which covariates violate the proportional hazard assumption.
+```{r problem 1}
+#Insert code for problem 1 here
+```
+# Interpret results for problem 1 here
+
+# Problem 2
+## Compute hazard ratio (HR) (95% CI) per for a 1-SD increase in blood lead using the covariates above.
+```{r problem 2}
+#Insert code for problem 2 here
+```
+# Include residuals histogram here
+# Interpret results for problem 2 here
+
+# Problem 3
+# Compare the lowest vs. the highest tertiles of blood lead using the covariates above. Compute HR and 95% CI.
+```{r problem 3}
+#Insert code for problem 3 here
+```
+# Interpret results for problem 3 here
+
+

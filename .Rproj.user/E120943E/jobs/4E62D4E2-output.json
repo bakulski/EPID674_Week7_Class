@@ -1,0 +1,6 @@
+[1,"Installing 'rmeta' ...\n"]
+[2,"Installing package into ‘/Library/Frameworks/R.framework/Versions/4.1/Resources/library’\n(as ‘lib’ is unspecified)\n"]
+[2,"trying URL 'https://cran.rstudio.com/bin/macosx/contrib/4.1/rmeta_3.0.tgz'\n"]
+[1,"The downloaded binary packages are in\n"]
+[1,"\t/var/folders/ck/gy7vyqsx61x1qtz3xb9nr5840000gr/T//RtmpUJ4eKX/downloaded_packages\n"]
+[2,"Content type 'application/x-gzip' length 109643 bytes (107 KB)\n==================================================\ndownloaded 107 KB\n\n\n\n✔ Package 'rmeta' successfully installed.\n"]

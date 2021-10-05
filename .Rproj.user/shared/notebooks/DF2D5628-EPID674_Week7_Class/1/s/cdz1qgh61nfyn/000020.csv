@@ -1,0 +1,4 @@
+"0","plot(test.prop, var = 4) + # Can call up variables indivdually, here for sex"
+"0","abline(h = 0, lty = 3, col = 2)"
+"1","integer(0)
+"

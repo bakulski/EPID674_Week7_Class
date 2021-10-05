@@ -1,0 +1,2 @@
+"0","## suppress 95% CI lines and the time marks for censored subjects."
+"0","plot(fit.total, ylim = c(0.7, 1.0), conf.int = F, mark.time = F, ylab=""Probability of survival"", xlab=""Months"")"
