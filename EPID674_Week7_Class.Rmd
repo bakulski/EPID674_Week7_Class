@@ -187,7 +187,6 @@ bpdsn
 svymean(~ nhanes$age, design=bpdsn)
 summ(nhanes$age)
 svymean(~ nhanes$age + nhanes$sbp + nhanes$bpb, design=bpdsn)
-svymean(~ nhanes$sbp + nhanes$bpb + nhanes$bmi, design=bpdsn)
 svymean(~ nhanes$sbp + nhanes$bpb + nhanes$bmi, design=bpdsn, na.rm=T)
 
 svytable(~ nhanes$sex, design=bpdsn)
@@ -197,8 +196,6 @@ svytable(~ nhanes$sex + nhanes$race, Ntotal=100, design=bpdsn)
 #svychisq(~ nhanes$sex + nhanes$race, design=bpdsn)
 chisq.test(nhanes$sex, nhanes$race)
 svytable(~ nhanes$htn + nhanes$smk, design=bpdsn)
-#svychisq(~ nhanes$htn + nhanes$smk, design=bpdsn, statistic="Wald")
-## Survey Chisq used in SUDAAN
 ```
 
 ## Survey weighting univariate, bivariate, and graphical analyses
